@@ -8,6 +8,10 @@ export class AudioManager {
   private noiseBuffer: AudioBuffer | null = null;
   private windSource: AudioBufferSourceNode | null = null;
   
+  // Background music
+  private musicElement: HTMLAudioElement | null = null;
+  private musicGain: GainNode | null = null;
+  
   async initialize(): Promise<void> {
     if (this.isInitialized) return;
     
@@ -26,9 +30,45 @@ export class AudioManager {
       // Start engine sound
       this.startEngine();
       
+      // Start background music
+      this.startMusic();
+      
       this.isInitialized = true;
     } catch (e) {
       console.warn('Audio initialization failed:', e);
+    }
+  }
+  
+  private startMusic(): void {
+    if (!this.audioContext || !this.masterGain) return;
+    
+    try {
+      this.musicElement = new Audio('/Song.mp3');
+      this.musicElement.loop = true;
+      this.musicElement.volume = 1.0; // Background music volume
+      
+      // Create a media element source
+      const source = this.audioContext.createMediaElementSource(this.musicElement);
+      this.musicGain = this.audioContext.createGain();
+      this.musicGain.gain.value = 1.2;
+      
+      source.connect(this.musicGain);
+      this.musicGain.connect(this.audioContext.destination);
+      
+      this.musicElement.play().catch(e => {
+        console.warn('Music autoplay blocked:', e);
+      });
+    } catch (e) {
+      console.warn('Failed to start music:', e);
+    }
+  }
+  
+  setMusicVolume(volume: number): void {
+    if (this.musicGain) {
+      this.musicGain.gain.value = volume;
+    }
+    if (this.musicElement) {
+      this.musicElement.volume = volume;
     }
   }
   
@@ -134,19 +174,102 @@ export class AudioManager {
   playCollisionSound(): void {
     if (!this.audioContext || !this.masterGain) return;
     
-    const osc = this.audioContext.createOscillator();
-    const gain = this.audioContext.createGain();
+    // Create a harsh crash sound with multiple components
+    const now = this.audioContext.currentTime;
     
-    osc.type = 'square';
-    osc.frequency.value = 100;
-    gain.gain.value = 0.2;
-    gain.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.3);
+    // Low thud
+    const thudOsc = this.audioContext.createOscillator();
+    const thudGain = this.audioContext.createGain();
+    thudOsc.type = 'sine';
+    thudOsc.frequency.value = 60;
+    thudOsc.frequency.exponentialRampToValueAtTime(30, now + 0.2);
+    thudGain.gain.value = 0.7;
+    thudGain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+    thudOsc.connect(thudGain);
+    thudGain.connect(this.masterGain);
+    thudOsc.start();
+    thudOsc.stop(now + 0.3);
     
-    osc.connect(gain);
-    gain.connect(this.masterGain);
+    // Metal crunch
+    const crunchOsc = this.audioContext.createOscillator();
+    const crunchGain = this.audioContext.createGain();
+    crunchOsc.type = 'sawtooth';
+    crunchOsc.frequency.value = 200;
+    crunchOsc.frequency.exponentialRampToValueAtTime(50, now + 0.15);
+    crunchGain.gain.value = 0.35;
+    crunchGain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+    crunchOsc.connect(crunchGain);
+    crunchGain.connect(this.masterGain);
+    crunchOsc.start();
+    crunchOsc.stop(now + 0.2);
     
-    osc.start();
-    osc.stop(this.audioContext.currentTime + 0.3);
+    // White noise burst for impact
+    const noiseBuffer = this.audioContext.createBuffer(1, this.audioContext.sampleRate * 0.15, this.audioContext.sampleRate);
+    const noiseData = noiseBuffer.getChannelData(0);
+    for (let i = 0; i < noiseData.length; i++) {
+      noiseData[i] = (Math.random() * 2 - 1) * (1 - i / noiseData.length);
+    }
+    const noiseSource = this.audioContext.createBufferSource();
+    noiseSource.buffer = noiseBuffer;
+    const noiseGain = this.audioContext.createGain();
+    noiseGain.gain.value = 0.45;
+    noiseSource.connect(noiseGain);
+    noiseGain.connect(this.masterGain);
+    noiseSource.start();
+  }
+  
+  playCoinSound(): void {
+    if (!this.audioContext || !this.masterGain) return;
+    
+    const now = this.audioContext.currentTime;
+    
+    // Bright coin chime with two tones
+    const osc1 = this.audioContext.createOscillator();
+    const gain1 = this.audioContext.createGain();
+    osc1.type = 'sine';
+    osc1.frequency.value = 1200;
+    gain1.gain.value = 0.4;
+    gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+    osc1.connect(gain1);
+    gain1.connect(this.masterGain);
+    osc1.start();
+    osc1.stop(now + 0.15);
+    
+    // Second higher tone slightly delayed
+    const osc2 = this.audioContext.createOscillator();
+    const gain2 = this.audioContext.createGain();
+    osc2.type = 'sine';
+    osc2.frequency.value = 1800;
+    gain2.gain.setValueAtTime(0, now);
+    gain2.gain.linearRampToValueAtTime(0.35, now + 0.05);
+    gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+    osc2.connect(gain2);
+    gain2.connect(this.masterGain);
+    osc2.start(now + 0.03);
+    osc2.stop(now + 0.2);
+  }
+  
+  playGemSound(): void {
+    if (!this.audioContext || !this.masterGain) return;
+    
+    const now = this.audioContext.currentTime;
+    
+    // Sparkling gem sound - arpeggiated tones
+    const frequencies = [880, 1320, 1760, 2200];
+    frequencies.forEach((freq, i) => {
+      const osc = this.audioContext!.createOscillator();
+      const gain = this.audioContext!.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      const startTime = now + i * 0.04;
+      gain.gain.setValueAtTime(0, startTime);
+      gain.gain.linearRampToValueAtTime(0.25, startTime + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.25);
+      osc.connect(gain);
+      gain.connect(this.masterGain!);
+      osc.start(startTime);
+      osc.stop(startTime + 0.25);
+    });
   }
   
   playPickupSound(): void {
@@ -168,6 +291,57 @@ export class AudioManager {
     osc.stop(this.audioContext.currentTime + 0.2);
   }
   
+  playGameOverSound(): void {
+    if (!this.audioContext || !this.masterGain) return;
+    
+    const now = this.audioContext.currentTime;
+    
+    // Dramatic descending tones
+    const notes = [440, 370, 311, 262];
+    notes.forEach((freq, i) => {
+      const osc = this.audioContext!.createOscillator();
+      const gain = this.audioContext!.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      const startTime = now + i * 0.25;
+      gain.gain.setValueAtTime(0.4, startTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.3);
+      osc.connect(gain);
+      gain.connect(this.masterGain!);
+      osc.start(startTime);
+      osc.stop(startTime + 0.3);
+    });
+    
+    // Low rumble bass
+    const bassOsc = this.audioContext.createOscillator();
+    const bassGain = this.audioContext.createGain();
+    bassOsc.type = 'sine';
+    bassOsc.frequency.value = 80;
+    bassOsc.frequency.exponentialRampToValueAtTime(40, now + 1.2);
+    bassGain.gain.value = 0.5;
+    bassGain.gain.exponentialRampToValueAtTime(0.01, now + 1.2);
+    bassOsc.connect(bassGain);
+    bassGain.connect(this.masterGain);
+    bassOsc.start();
+    bassOsc.stop(now + 1.2);
+    
+    // Final crash
+    const crashBuffer = this.audioContext.createBuffer(1, this.audioContext.sampleRate * 0.5, this.audioContext.sampleRate);
+    const crashData = crashBuffer.getChannelData(0);
+    for (let i = 0; i < crashData.length; i++) {
+      crashData[i] = (Math.random() * 2 - 1) * Math.exp(-i / (this.audioContext.sampleRate * 0.15));
+    }
+    const crashSource = this.audioContext.createBufferSource();
+    crashSource.buffer = crashBuffer;
+    const crashGain = this.audioContext.createGain();
+    crashGain.gain.setValueAtTime(0, now + 0.8);
+    crashGain.gain.linearRampToValueAtTime(0.5, now + 0.85);
+    crashGain.gain.exponentialRampToValueAtTime(0.01, now + 1.3);
+    crashSource.connect(crashGain);
+    crashGain.connect(this.masterGain);
+    crashSource.start(now + 0.8);
+  }
+  
   setMasterVolume(volume: number): void {
     if (this.masterGain) {
       this.masterGain.gain.value = volume;
@@ -182,6 +356,11 @@ export class AudioManager {
     if (this.windSource) {
       this.windSource.stop();
       this.windSource.disconnect();
+    }
+    if (this.musicElement) {
+      this.musicElement.pause();
+      this.musicElement.src = '';
+      this.musicElement = null;
     }
     if (this.audioContext) {
       this.audioContext.close();

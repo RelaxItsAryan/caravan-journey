@@ -18,6 +18,7 @@ export class GameEngine {
   private jeepPosition = { x: 0, z: 0 };
   private jeepRotation = 0;
   private targetRotation = 0;
+  private totalDistance = 0; // Track total distance for spawning
 
   private roadOffset = 0;
   private readonly ROAD_SEGMENT_LENGTH = 40;
@@ -223,16 +224,18 @@ export class GameEngine {
     this.scene.add(this.weatherParticles);
   }
 
+  private ground: THREE.Mesh | null = null;
+
   private createRoad(): THREE.Group {
     const roadGroup = new THREE.Group();
 
-    const groundGeometry = new THREE.PlaneGeometry(500, 500);
+    const groundGeometry = new THREE.PlaneGeometry(1000, 1000);
     const groundMaterial = new THREE.MeshLambertMaterial({ color: 0x8b7355 });
-    const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-    ground.rotation.x = -Math.PI / 2;
-    ground.position.y = -0.1;
-    ground.receiveShadow = true;
-    roadGroup.add(ground);
+    this.ground = new THREE.Mesh(groundGeometry, groundMaterial);
+    this.ground.rotation.x = -Math.PI / 2;
+    this.ground.position.y = -0.1;
+    this.ground.receiveShadow = true;
+    this.scene.add(this.ground); // Add directly to scene so it can follow car
 
     const roadGeometry = new THREE.PlaneGeometry(
       this.ROAD_WIDTH,
@@ -1072,7 +1075,8 @@ export class GameEngine {
 
   private createSupplyDrop(zPosition: number): SupplyDrop {
     const lane = this.LANES[Math.floor(Math.random() * this.LANES.length)];
-    const types = ['fuel', 'fuel', 'fuel', 'health', 'money', 'coin', 'coin', 'coin', 'goldCoin', 'diamond'] as const;
+    // More coins, gems, and diamonds!
+    const types = ['fuel', 'fuel', 'health', 'money', 'coin', 'coin', 'coin', 'coin', 'coin', 'coin', 'goldCoin', 'goldCoin', 'goldCoin', 'diamond', 'diamond', 'gem', 'gem', 'gem', 'ruby', 'emerald'] as const;
     const type = types[Math.floor(Math.random() * types.length)];
     
     const group = new THREE.Group();
@@ -1164,6 +1168,77 @@ export class GameEngine {
       const glow = new THREE.Mesh(glowGeometry, glowMaterial);
       glow.position.y = 1;
       group.add(glow);
+    } else if (type === 'gem') {
+      // Purple gem - hexagonal prism
+      const gemGeometry = new THREE.CylinderGeometry(0.35, 0.35, 0.5, 6);
+      const gemMaterial = new THREE.MeshLambertMaterial({ 
+        color: 0xaa44ff,
+        emissive: 0x8822dd,
+        emissiveIntensity: 0.5,
+        transparent: true,
+        opacity: 0.9
+      });
+      const gem = new THREE.Mesh(gemGeometry, gemMaterial);
+      gem.position.y = 0.9;
+      group.add(gem);
+      
+      const glowGeometry = new THREE.SphereGeometry(0.5, 8, 8);
+      const glowMaterial = new THREE.MeshBasicMaterial({
+        color: 0xaa44ff,
+        transparent: true,
+        opacity: 0.35
+      });
+      const glow = new THREE.Mesh(glowGeometry, glowMaterial);
+      glow.position.y = 0.9;
+      group.add(glow);
+    } else if (type === 'ruby') {
+      // Ruby - red tetrahedron
+      const rubyGeometry = new THREE.TetrahedronGeometry(0.4, 0);
+      const rubyMaterial = new THREE.MeshLambertMaterial({ 
+        color: 0xff2244,
+        emissive: 0xcc1133,
+        emissiveIntensity: 0.6,
+        transparent: true,
+        opacity: 0.9
+      });
+      const ruby = new THREE.Mesh(rubyGeometry, rubyMaterial);
+      ruby.position.y = 1;
+      ruby.scale.set(1, 1.3, 1);
+      group.add(ruby);
+      
+      const glowGeometry = new THREE.SphereGeometry(0.5, 8, 8);
+      const glowMaterial = new THREE.MeshBasicMaterial({
+        color: 0xff4466,
+        transparent: true,
+        opacity: 0.4
+      });
+      const glow = new THREE.Mesh(glowGeometry, glowMaterial);
+      glow.position.y = 1;
+      group.add(glow);
+    } else if (type === 'emerald') {
+      // Emerald - green rectangular gem
+      const emeraldGeometry = new THREE.BoxGeometry(0.35, 0.6, 0.35);
+      const emeraldMaterial = new THREE.MeshLambertMaterial({ 
+        color: 0x22ff66,
+        emissive: 0x11cc44,
+        emissiveIntensity: 0.5,
+        transparent: true,
+        opacity: 0.9
+      });
+      const emerald = new THREE.Mesh(emeraldGeometry, emeraldMaterial);
+      emerald.position.y = 0.9;
+      emerald.rotation.y = Math.PI / 4;
+      group.add(emerald);
+      
+      const glowGeometry = new THREE.SphereGeometry(0.5, 8, 8);
+      const glowMaterial = new THREE.MeshBasicMaterial({
+        color: 0x44ff88,
+        transparent: true,
+        opacity: 0.35
+      });
+      const glow = new THREE.Mesh(glowGeometry, glowMaterial);
+      glow.position.y = 0.9;
+      group.add(glow);
     } else if (type === 'fuel') {
       // Fuel canister - red jerrycan style
       const canisterMaterial = new THREE.MeshLambertMaterial({ 
@@ -1250,7 +1325,10 @@ export class GameEngine {
       money: 25,
       coin: 10,
       goldCoin: 50,
-      diamond: 100
+      diamond: 100,
+      gem: 35,
+      ruby: 75,
+      emerald: 60
     }[type] || 10;
     
     group.position.set(lane, 0, zPosition);
@@ -1572,30 +1650,38 @@ export class GameEngine {
 
   private updateWeatherParticles(deltaTime: number, speed: number): void {
     if (this.dustParticles) {
+      // Center dust particles around the car
+      this.dustParticles.position.z = this.jeepPosition.z;
+      
       const positions = this.dustParticles.geometry.attributes.position.array as Float32Array;
       const windSpeed = this.weatherType === 'sandstorm' ? 30 : this.weatherType === 'windy' ? 15 : 5;
       
       for (let i = 0; i < positions.length; i += 3) {
         positions[i] += (Math.random() - 0.3) * windSpeed * deltaTime;
         positions[i + 1] += (Math.random() - 0.5) * 2 * deltaTime;
-        positions[i + 2] += speed * deltaTime * 10;
+        positions[i + 2] += (Math.random() - 0.5) * deltaTime * 10;
         
         if (positions[i] > 50) positions[i] -= 100;
         if (positions[i] < -50) positions[i] += 100;
         if (positions[i + 2] > 100) positions[i + 2] -= 200;
+        if (positions[i + 2] < -100) positions[i + 2] += 200;
       }
       this.dustParticles.geometry.attributes.position.needsUpdate = true;
     }
     
     if (this.weatherParticles && this.weatherType === 'windy') {
+      // Center weather particles around the car
+      this.weatherParticles.position.z = this.jeepPosition.z;
+      
       const positions = this.weatherParticles.geometry.attributes.position.array as Float32Array;
       
       for (let i = 0; i < positions.length; i += 3) {
         positions[i] += 20 * deltaTime;
-        positions[i + 2] += speed * deltaTime * 10;
+        positions[i + 2] += (Math.random() - 0.5) * deltaTime * 10;
         
         if (positions[i] > 40) positions[i] -= 80;
         if (positions[i + 2] > 75) positions[i + 2] -= 150;
+        if (positions[i + 2] < -75) positions[i + 2] += 150;
       }
       this.weatherParticles.geometry.attributes.position.needsUpdate = true;
     }
@@ -1615,45 +1701,66 @@ export class GameEngine {
     }
 
     const movement = speed * deltaTime * 10;
-    this.roadOffset += movement;
+    this.totalDistance += movement;
+    this.roadOffset = this.totalDistance; // Keep for compatibility
 
     // Increase difficulty over time
-    this.difficultyMultiplier = 1 + (this.roadOffset / 1000) * 0.3;
+    this.difficultyMultiplier = 1 + (this.totalDistance / 1000) * 0.3;
 
     this.targetRotation = steering * 0.3;
     this.jeepRotation += (this.targetRotation - this.jeepRotation) * 0.1;
 
+    // Move car forward (negative Z) and handle steering
     this.jeepPosition.x += steering * speed * deltaTime * 3;
     this.jeepPosition.x = THREE.MathUtils.clamp(
       this.jeepPosition.x,
       -this.ROAD_WIDTH / 2 + 2,
       this.ROAD_WIDTH / 2 - 2
     );
+    this.jeepPosition.z -= movement; // Car moves forward
 
     this.jeep.position.x = this.jeepPosition.x;
+    this.jeep.position.z = this.jeepPosition.z;
     this.jeep.rotation.y = this.jeepRotation;
-    this.jeep.position.y = Math.sin(this.roadOffset * 0.5) * 0.03;
+    this.jeep.position.y = Math.sin(this.totalDistance * 0.5) * 0.03;
 
-    this.roadSegments.forEach((segment) => {
-      segment.position.z += movement;
-      if (segment.position.z > this.ROAD_SEGMENT_LENGTH * 2) {
-        segment.position.z -= this.NUM_ROAD_SEGMENTS * this.ROAD_SEGMENT_LENGTH;
+    // Camera follows the car
+    this.camera.position.x = this.jeepPosition.x * 0.3; // Slight follow on X
+    this.camera.position.z = this.jeepPosition.z + 15; // Stay behind the car
+    this.camera.lookAt(this.jeepPosition.x * 0.5, 0, this.jeepPosition.z - 10);
+
+    // Update road segments - keep them around the car
+    this.roadSegments.forEach((segment, index) => {
+      const targetZ = this.jeepPosition.z - (index - 2) * this.ROAD_SEGMENT_LENGTH;
+      // Reposition segments that are too far behind
+      if (segment.position.z > this.jeepPosition.z + this.ROAD_SEGMENT_LENGTH * 2) {
+        segment.position.z = this.jeepPosition.z - (this.NUM_ROAD_SEGMENTS - 2) * this.ROAD_SEGMENT_LENGTH;
       }
     });
 
+    // Update road group to follow car
+    this.road.position.z = Math.floor(this.jeepPosition.z / this.ROAD_SEGMENT_LENGTH) * this.ROAD_SEGMENT_LENGTH;
+
+    // Update ground to follow car
+    if (this.ground) {
+      this.ground.position.z = this.jeepPosition.z;
+    }
+
+    // Update decorations relative to car
     this.decorations.children.forEach((child) => {
-      child.position.z += movement;
-      if (child.position.z > 150) {
+      // If decoration is far behind, move it ahead
+      if (child.position.z > this.jeepPosition.z + 100) {
         child.position.z -= 300;
       }
     });
 
     // Spawn obstacles more frequently as difficulty increases
-    if (this.roadOffset >= this.nextObstacleDistance) {
+    if (this.totalDistance >= this.nextObstacleDistance) {
       // Spawn 2-4 obstacles at once based on difficulty
       const numObstacles = Math.min(4, Math.floor((2 + Math.random() * this.difficultyMultiplier) * this.difficultyConfig.obstacleSpawnRate));
       for (let j = 0; j < numObstacles; j++) {
-        this.obstacles.push(this.createObstacle(-60 - Math.random() * 50 - j * 15));
+        // Spawn obstacles ahead of the car
+        this.obstacles.push(this.createObstacle(this.jeepPosition.z - 60 - Math.random() * 50 - j * 15));
       }
       // Faster spawning - obstacles appear more frequently (adjusted by difficulty)
       const baseInterval = Math.max(6, (20 - this.difficultyMultiplier * 3) / this.difficultyConfig.obstacleSpawnRate);
@@ -1661,8 +1768,9 @@ export class GameEngine {
     }
 
     // Spawn supply drops
-    if (this.roadOffset >= this.nextSupplyDropDistance) {
-      this.supplyDrops.push(this.createSupplyDrop(-100 - Math.random() * 30));
+    if (this.totalDistance >= this.nextSupplyDropDistance) {
+      // Spawn supply drops ahead of the car
+      this.supplyDrops.push(this.createSupplyDrop(this.jeepPosition.z - 100 - Math.random() * 30));
       // Adjust supply drop rate based on difficulty
       this.nextSupplyDropDistance += (60 + Math.random() * 80) / this.difficultyConfig.supplyDropRate;
     }
@@ -1670,7 +1778,7 @@ export class GameEngine {
     // Update and check obstacles
     for (let i = this.obstacles.length - 1; i >= 0; i--) {
       const obstacle = this.obstacles[i];
-      obstacle.mesh.position.z += movement;
+      // Obstacles are static on the road, car moves to them
       obstacle.z = obstacle.mesh.position.z;
       
       // Moving obstacles (tumbleweeds, vehicles)
@@ -1679,13 +1787,13 @@ export class GameEngine {
         const vehicleTypes = ['trafficCar', 'truck', 'motorcycle', 'policeCar', 'ambulance', 'sportsCar', 'bus', 'pickupTruck', 'taxi'];
         
         if (vehicleTypes.includes(obstacle.type)) {
-          // Vehicles move along the road
+          // Vehicles move along the road (opposite direction or same direction)
           const vehicleSpeed = obstacle.moveDirection * deltaTime * 15 * speed;
           obstacle.mesh.position.z += vehicleSpeed;
           obstacle.z = obstacle.mesh.position.z;
           
           // Face the correct direction
-          if (obstacle.moveDirection < 0) {
+          if (obstacle.moveDirection > 0) {
             obstacle.mesh.rotation.y = Math.PI; // Coming towards player
           }
         } else {
@@ -1724,8 +1832,9 @@ export class GameEngine {
         case 'taxi': hitboxWidth = 1.8; hitboxDepth = 3; break;
       }
       
+      // Calculate distance from car to obstacle
       const dx = Math.abs(this.jeepPosition.x - obstacle.mesh.position.x);
-      const dz = Math.abs(obstacle.z);
+      const dz = Math.abs(this.jeepPosition.z - obstacle.mesh.position.z);
       
       if (dx < hitboxWidth && dz < hitboxDepth) {
         // Different damage for different obstacles
@@ -1766,7 +1875,8 @@ export class GameEngine {
         continue;
       }
       
-      if (obstacle.z > 30) {
+      // Remove obstacles that are far behind the car
+      if (obstacle.mesh.position.z > this.jeepPosition.z + 30) {
         this.scene.remove(obstacle.mesh);
         this.obstacles.splice(i, 1);
       }
@@ -1774,15 +1884,16 @@ export class GameEngine {
 
     for (let i = this.supplyDrops.length - 1; i >= 0; i--) {
       const drop = this.supplyDrops[i];
-      drop.mesh.position.z += movement;
+      // Supply drops are static, car moves to them
       drop.z = drop.mesh.position.z;
       
       const floatOffset = (drop.mesh as THREE.Group).userData.floatOffset || 0;
       drop.mesh.position.y = 0.3 + Math.sin(Date.now() * 0.003 + floatOffset) * 0.2;
       drop.mesh.rotation.y += deltaTime * 2;
       
+      // Calculate distance from car to supply drop
       const dx = Math.abs(this.jeepPosition.x - drop.lane);
-      const dz = Math.abs(drop.z);
+      const dz = Math.abs(this.jeepPosition.z - drop.mesh.position.z);
       
       if (dx < 1.8 && dz < 2.5) {
         collisions.push({ type: 'pickup', pickup: { type: drop.type, value: drop.value } });
@@ -1796,14 +1907,16 @@ export class GameEngine {
         continue;
       }
       
-      if (drop.z > 30) {
+      // Remove supply drops that are far behind the car
+      if (drop.mesh.position.z > this.jeepPosition.z + 30) {
         this.scene.remove(drop.mesh);
         this.supplyDrops.splice(i, 1);
       }
     }
 
-    if (this.roadOffset >= this.nextCrossroadDistance) {
-      const crossroad = this.createCrossroad(-100);
+    if (this.totalDistance >= this.nextCrossroadDistance) {
+      // Spawn crossroad ahead of the car
+      const crossroad = this.createCrossroad(this.jeepPosition.z - 100);
       this.crossroads.push(crossroad);
       this.scene.add(crossroad);
       this.nextCrossroadDistance += this.CROSSROAD_INTERVAL;
@@ -1811,16 +1924,18 @@ export class GameEngine {
 
     let triggeredEncounter = false;
     this.crossroads.forEach((crossroad, index) => {
-      crossroad.position.z += movement;
+      // Check if car is near the crossroad
+      const distanceToCrossroad = Math.abs(this.jeepPosition.z - crossroad.position.z);
 
-      if (crossroad.position.z > -5 && crossroad.position.z < 5 && !triggeredEncounter) {
+      if (distanceToCrossroad < 5 && !triggeredEncounter) {
         triggeredEncounter = true;
         if (this.onCrossroadReached) {
           this.onCrossroadReached();
         }
       }
 
-      if (crossroad.position.z > 50) {
+      // Remove crossroads that are far behind the car
+      if (crossroad.position.z > this.jeepPosition.z + 50) {
         this.scene.remove(crossroad);
         this.crossroads.splice(index, 1);
       }
@@ -1852,14 +1967,29 @@ export class GameEngine {
     this.supplyDrops.forEach(drop => this.scene.remove(drop.mesh));
     this.supplyDrops = [];
     
+    // Clear crossroads
+    this.crossroads.forEach(cr => this.scene.remove(cr));
+    this.crossroads = [];
+    
     // Reset positions and state
     this.roadOffset = 0;
+    this.totalDistance = 0;
     this.nextCrossroadDistance = 150;
     this.nextObstacleDistance = 15;
     this.nextSupplyDropDistance = 50;
     this.difficultyMultiplier = 1;
     this.jeepPosition = { x: 0, z: 0 };
     this.jeep.position.set(0, 0.5, 0);
+    
+    // Reset camera
+    this.camera.position.set(0, 8, 15);
+    this.camera.lookAt(0, 0, -10);
+    
+    // Reset road segments
+    this.roadSegments.forEach((segment, i) => {
+      segment.position.z = -i * this.ROAD_SEGMENT_LENGTH + this.ROAD_SEGMENT_LENGTH;
+    });
+    this.road.position.z = 0;
   }
 
   public getDifficultyConfig(): DifficultyConfig {

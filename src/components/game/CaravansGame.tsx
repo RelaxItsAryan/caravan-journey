@@ -221,7 +221,22 @@ export const CaravansGame = () => {
     };
 
     engineRef.current.onSupplyCollected = (type: string, value: number) => {
-      audioRef.current?.playPickupSound();
+      // Play appropriate sound based on collectible type
+      switch (type) {
+        case 'coin':
+        case 'goldCoin':
+          audioRef.current?.playCoinSound();
+          break;
+        case 'diamond':
+        case 'gem':
+        case 'ruby':
+        case 'emerald':
+          audioRef.current?.playGemSound();
+          break;
+        default:
+          audioRef.current?.playPickupSound();
+      }
+      
       setShowPickupEffect({ type, value });
       setTimeout(() => setShowPickupEffect(null), 1000);
       
@@ -239,6 +254,9 @@ export const CaravansGame = () => {
           case 'coin':
           case 'goldCoin':
           case 'diamond':
+          case 'gem':
+          case 'ruby':
+          case 'emerald':
             newState.money = prev.money + value;
             break;
         }
@@ -334,11 +352,13 @@ export const CaravansGame = () => {
       if (newSupplies <= 0 && !isGameOver) {
         setIsGameOver(true);
         setGameOverReason("supplies");
+        audioRef.current?.playGameOverSound();
         SaveManager.saveScore("Player", currentGameState.distance + result.movement * 0.1, currentGameState.money);
       }
       if (currentGameState.health <= 0 && !isGameOver) {
         setIsGameOver(true);
         setGameOverReason("health");
+        audioRef.current?.playGameOverSound();
         SaveManager.saveScore("Player", currentGameState.distance + result.movement * 0.1, currentGameState.money);
       }
 

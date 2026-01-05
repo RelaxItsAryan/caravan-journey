@@ -86,7 +86,7 @@ export const DIFFICULTY_CONFIGS: Record<DifficultyLevel, DifficultyConfig> = {
     obstacleDamage: 1.3,
     fuelConsumption: 0.6,
     supplyDropRate: 0.7,
-    startingFuel: 80,
+    startingFuel: 90,
     startingHealth: 100,
     startingMoney: 30,
     scoreMultiplier: 1.5,
@@ -99,7 +99,7 @@ export const DIFFICULTY_CONFIGS: Record<DifficultyLevel, DifficultyConfig> = {
     obstacleDamage: 1.8,
     fuelConsumption: 0.6,
     supplyDropRate: 0.5,
-    startingFuel: 60,
+    startingFuel: 80,
     startingHealth: 80,
     startingMoney: 10,
     scoreMultiplier: 2.5,
@@ -147,7 +147,7 @@ export interface SupplyDrop {
   mesh: THREE.Object3D;
   lane: number;
   z: number;
-  type: 'fuel' | 'health' | 'money' | 'coin' | 'goldCoin' | 'diamond';
+  type: 'fuel' | 'health' | 'money' | 'coin' | 'goldCoin' | 'diamond' | 'gem' | 'ruby' | 'emerald';
   value: number;
 }
 
