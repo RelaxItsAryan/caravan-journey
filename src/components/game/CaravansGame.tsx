@@ -10,13 +10,19 @@ import { StartScreen } from "./StartScreen";
 
 const INITIAL_STATE: GameState = {
   supplies: 100,
+  maxSupplies: 100,
   health: 100,
+  maxHealth: 100,
   distance: 0,
   speed: 0,
   maxSpeed: 1,
+  money: 50,
   isPaused: true,
+  isGameOver: false,
   isEncounterActive: false,
   currentEncounter: null,
+  timeOfDay: 10,
+  weather: 'clear',
 };
 
 export const CaravansGame = () => {
