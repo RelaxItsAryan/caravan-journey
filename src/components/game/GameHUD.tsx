@@ -41,103 +41,126 @@ export const GameHUD = ({ gameState, difficulty = 'medium' }: GameHUDProps) => {
   return (
     <div className="absolute top-6 left-6 right-6 flex justify-between items-start pointer-events-none z-10">
       {/* Left HUD Panel */}
-      <div className="bg-card/90 backdrop-blur-sm border border-border rounded-lg p-4 shadow-lg pointer-events-auto">
-        <h2 className="font-display text-lg text-primary mb-3 flex items-center gap-2">
-          <Compass className="w-5 h-5" />
+      <div className="card-glass glow-box rounded-2xl p-6 shadow-xl pointer-events-auto max-w-sm">
+        <h2 className="font-display text-xl text-primary mb-5 flex items-center gap-3 text-glow">
+          <Compass className="w-6 h-6" />
           Caravan Status
         </h2>
 
         {/* Fuel Bar */}
-        <div className="mb-3">
-          <div className="flex items-center gap-2 mb-1">
-            <Fuel className="w-4 h-4 text-sunset-gold" />
-            <span className="text-sm text-foreground">Fuel</span>
-            <span className="text-sm text-muted-foreground ml-auto">{Math.round(supplies)}%</span>
+        <div className="mb-5">
+          <div className="flex items-center gap-2 mb-2">
+            <Fuel className="w-5 h-5 text-sunset-gold animate-pulse" />
+            <span className="text-sm font-semibold text-foreground">Fuel</span>
+            <span className="text-sm text-primary ml-auto font-bold">{Math.round(supplies)}%</span>
           </div>
-          <div className="h-2 bg-secondary rounded-full overflow-hidden">
+          <div className="h-3 bg-secondary/60 rounded-full overflow-hidden border border-border/40">
             <div
-              className="h-full bg-gradient-to-r from-amber-deep to-sunset-gold transition-all duration-300"
+              className="h-full bg-gradient-to-r from-amber-600 via-sunset-gold to-amber-400 transition-all duration-300 rounded-full shadow-lg shadow-sunset-gold/40"
               style={{ width: `${supplies}%` }}
             />
           </div>
+          <div className="text-xs text-muted-foreground mt-1">{supplies > 20 ? '🛢️ Flowing' : supplies > 10 ? '⚠️ Low' : '🔴 Critical'}</div>
         </div>
 
         {/* Health Bar */}
-        <div className="mb-3">
-          <div className="flex items-center gap-2 mb-1">
-            <Heart className="w-4 h-4 text-destructive" />
-            <span className="text-sm text-foreground">Health</span>
-            <span className="text-sm text-muted-foreground ml-auto">{Math.round(health)}%</span>
+        <div className="mb-5">
+          <div className="flex items-center gap-2 mb-2">
+            <Heart className="w-5 h-5 text-red-500 animate-pulse" />
+            <span className="text-sm font-semibold text-foreground">Health</span>
+            <span className="text-sm text-primary ml-auto font-bold">{Math.round(health)}%</span>
           </div>
-          <div className="h-2 bg-secondary rounded-full overflow-hidden">
+          <div className="h-3 bg-secondary/60 rounded-full overflow-hidden border border-border/40">
             <div
-              className="h-full transition-all duration-300"
+              className="h-full transition-all duration-300 rounded-full shadow-lg"
               style={{
                 width: `${health}%`,
                 background:
                   health > 50
-                    ? "linear-gradient(to right, hsl(120, 50%, 40%), hsl(90, 60%, 45%))"
+                    ? "linear-gradient(to right, hsl(120, 70%, 50%), hsl(90, 80%, 55%))"
                     : health > 25
-                    ? "linear-gradient(to right, hsl(45, 80%, 50%), hsl(30, 90%, 50%))"
-                    : "linear-gradient(to right, hsl(0, 70%, 50%), hsl(0, 60%, 40%))",
+                    ? "linear-gradient(to right, hsl(45, 90%, 55%), hsl(30, 100%, 50%))"
+                    : "linear-gradient(to right, hsl(0, 80%, 50%), hsl(0, 70%, 45%))",
+                boxShadow: health > 50 ? '0 0 10px hsl(120, 70%, 50% / 0.4)' : health > 25 ? '0 0 10px hsl(30, 100%, 50% / 0.4)' : '0 0 10px hsl(0, 80%, 50% / 0.4)',
               }}
             />
           </div>
+          <div className="text-xs text-muted-foreground mt-1">{health > 50 ? '💪 Healthy' : health > 25 ? '🤕 Injured' : '❌ Critical'}</div>
         </div>
 
         {/* Speed Indicator */}
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <Gauge className="w-4 h-4 text-primary" />
-            <span className="text-sm text-foreground">Speed</span>
-            <span className="text-sm text-muted-foreground ml-auto">
-              {Math.round((speed / maxSpeed) * 100)}%
-            </span>
+        <div className="mb-5">
+          <div className="flex items-center gap-2 mb-2">
+            <Gauge className="w-5 h-5 text-primary" />
+            <span className="text-sm font-semibold text-foreground">Speed</span>
+            <span className="text-sm text-primary ml-auto font-bold">{Math.round((speed / maxSpeed) * 100)}%</span>
           </div>
-          <div className="h-2 bg-secondary rounded-full overflow-hidden">
+          <div className="h-3 bg-secondary/60 rounded-full overflow-hidden border border-border/40">
             <div
-              className="h-full bg-primary transition-all duration-150"
+              className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-150 rounded-full shadow-lg shadow-primary/40"
               style={{ width: `${(speed / maxSpeed) * 100}%` }}
             />
           </div>
+          <div className="text-xs text-muted-foreground mt-1">⚡ {speed.toFixed(1)} u/s</div>
         </div>
 
         {/* Money */}
-        <div className="mt-3 pt-3 border-t border-border">
-          <div className="flex items-center gap-2">
-            <DollarSign className="w-4 h-4 text-green-500" />
-            <span className="text-sm text-foreground">Money</span>
-            <span className="text-lg font-bold text-green-400 ml-auto">${money}</span>
+        <div className="bg-gradient-to-r from-green-900/30 to-emerald-900/20 border border-green-700/30 rounded-lg p-3 mt-5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <DollarSign className="w-5 h-5 text-green-400" />
+              <span className="text-sm font-semibold text-foreground">Credits</span>
+            </div>
+            <span className="text-xl font-display font-bold text-green-400 text-glow">${money}</span>
           </div>
         </div>
       </div>
 
       {/* Right HUD Panel - Distance & Status */}
-      <div className="bg-card/90 backdrop-blur-sm border border-border rounded-lg p-4 shadow-lg pointer-events-auto text-center">
-        <span className="text-xs text-muted-foreground uppercase tracking-wider">Distance Traveled</span>
-        <div className="font-display text-3xl text-primary text-glow mt-1">
-          {Math.round(distance)}
+      <div className="card-glass glow-box rounded-2xl p-6 shadow-xl pointer-events-auto text-center max-w-sm">
+        <div className="mb-4">
+          <span className="text-xs text-muted-foreground uppercase tracking-wider font-bold">Distance</span>
+          <div className="font-display text-4xl text-glow-strong font-bold mt-2">
+            {Math.round(distance)}
+          </div>
+          <span className="text-xs text-muted-foreground">miles</span>
         </div>
-        <span className="text-xs text-muted-foreground">leagues</span>
         
         {/* Difficulty Badge */}
-        <div className="mt-3 pt-3 border-t border-border">
-          <div className={`flex items-center justify-center gap-1 ${difficultyConfig.color}`}>
+        <div className="mb-4 pt-4 border-t border-border/40">
+          <div className={`flex items-center justify-center gap-2 font-bold py-2 px-3 rounded-lg bg-secondary/40 ${difficultyConfig.color}`}>
             <Skull className="w-4 h-4" />
-            <span className="text-sm font-bold">{difficultyConfig.name}</span>
-            <span className="text-xs text-muted-foreground ml-1">(x{difficultyConfig.scoreMultiplier})</span>
+            <span className="text-sm">{difficultyConfig.name}</span>
+            <span className="text-xs opacity-75">×{difficultyConfig.scoreMultiplier}</span>
           </div>
         </div>
         
         {/* Time and Weather */}
-        <div className="mt-3 pt-3 border-t border-border flex justify-around">
-          <div className="flex flex-col items-center">
-            {getTimeIcon(timeOfDay)}
-            <span className="text-xs text-muted-foreground mt-1">{formatTime(timeOfDay)}</span>
-          </div>
-          <div className="flex flex-col items-center">
-            {getWeatherIcon(weather)}
-            <span className="text-xs text-muted-foreground mt-1 capitalize">{weather}</span>
+        <div className="border-t border-border/40 pt-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-secondary/40 rounded-lg p-2">
+              <div className="flex justify-center mb-1">
+                {getTimeIcon(timeOfDay)}
+              </div>
+              <span className="text-xs text-muted-foreground block mb-1">{formatTime(timeOfDay)}</span>
+              <div className="text-xs font-bold text-foreground">
+                {timeOfDay >= 6 && timeOfDay < 12 ? '🌅 Morning' : 
+                 timeOfDay >= 12 && timeOfDay < 18 ? '☀️ Afternoon' : 
+                 timeOfDay >= 18 && timeOfDay < 21 ? '🌆 Evening' : '🌙 Night'}
+              </div>
+            </div>
+            <div className="bg-secondary/40 rounded-lg p-2">
+              <div className="flex justify-center mb-1">
+                {getWeatherIcon(weather)}
+              </div>
+              <span className="text-xs text-muted-foreground block mb-1 capitalize">{weather}</span>
+              <div className="text-xs font-bold text-foreground">
+                {weather === 'clear' ? '🌞 Clear' :
+                 weather === 'dusty' ? '💨 Dusty' :
+                 weather === 'windy' ? '🌪️ Windy' :
+                 weather === 'sandstorm' ? '🌪️ Storm' : 'Unknown'}
+              </div>
+            </div>
           </div>
         </div>
       </div>

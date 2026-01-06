@@ -26,8 +26,8 @@ export class GameEngine {
   private readonly NUM_ROAD_SEGMENTS = 8;
   private readonly LANES = [-4, 0, 4];
 
-  private nextCrossroadDistance = 150;
-  private readonly CROSSROAD_INTERVAL = 200;
+  private nextCrossroadDistance = 280;
+  private readonly CROSSROAD_INTERVAL = 320;
   private nextObstacleDistance = 15;
   private nextSupplyDropDistance = 50;
   private difficultyMultiplier = 1;
@@ -55,7 +55,7 @@ export class GameEngine {
     description: 'Balanced challenge',
     obstacleSpawnRate: 1.0,
     obstacleDamage: 1.0,
-    fuelConsumption: 1.0,
+    fuelConsumption: 0.5,
     supplyDropRate: 1.0,
     startingFuel: 100,
     startingHealth: 100,

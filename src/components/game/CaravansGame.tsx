@@ -17,7 +17,7 @@ const INITIAL_STATE: GameState = {
   maxHealth: 100,
   distance: 0,
   speed: 0,
-  maxSpeed: 1,
+  maxSpeed: 2.5,
   money: 50,
   isPaused: true,
   isGameOver: false,
@@ -77,11 +77,11 @@ export const CaravansGame = () => {
   const handleCrossroadReached = useCallback(() => {
     if (encounterCooldownRef.current > 0) return;
 
-    encounterCooldownRef.current = 100;
+    encounterCooldownRef.current = 5;
 
-    // 30% chance of trading post, 70% chance of encounter
-    if (Math.random() < 0.3 && tradingCooldownRef.current <= 0) {
-      tradingCooldownRef.current = 300;
+    // 25% chance of trading post, 75% chance of encounter
+    if (Math.random() < 0.25 && tradingCooldownRef.current <= 0) {
+      tradingCooldownRef.current = 30;
       setGameState((prev) => ({
         ...prev,
         isPaused: true,
@@ -287,11 +287,11 @@ export const CaravansGame = () => {
       // Calculate base speed (without weather effects)
       let baseSpeed = currentGameState.speed;
       if (input.forward) {
-        baseSpeed = Math.min(currentGameState.maxSpeed, baseSpeed + clampedDelta * 0.5);
+        baseSpeed = Math.min(currentGameState.maxSpeed, baseSpeed + clampedDelta * 1.2);
       } else if (input.backward) {
-        baseSpeed = Math.max(0, baseSpeed - clampedDelta * 0.8);
+        baseSpeed = Math.max(0, baseSpeed - clampedDelta * 1.5);
       } else {
-        baseSpeed = Math.max(0, baseSpeed - clampedDelta * 0.2);
+        baseSpeed = Math.max(0, baseSpeed - clampedDelta * 0.4);
       }
 
       // Apply weather effects to effective speed (don't save this to state!)
