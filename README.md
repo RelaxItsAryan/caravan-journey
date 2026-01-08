@@ -46,7 +46,7 @@ If you want to play or develop further locally:
 
 Clone the repository
 
-git clone 
+git clone https://github.com/RelaxItsAryan/caravan-journey.git
 
 
 Open index.html in your browser
